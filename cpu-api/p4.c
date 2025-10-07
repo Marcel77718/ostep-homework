@@ -1,0 +1,25 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <syswait.h>
+#include <string.h>
+#include <fcntl.h>
+
+int main (int argc, char *argv[]) {
+    int rc = fork();
+    if (rc < 0) {
+        fprintf(stderr, "fork failed\n");
+        exit(1);
+    } else if (rc == 0) {
+        close(STDOUT_FILENO);
+        open("./p4.output", O_CREATE | O_WRONGLY | O_TRUNC, S_IRWXU);
+        char *myargs[3];
+        myargs[0] = strdup("wc"); // program: wc
+        myargs[1] = strdup("p4.c"); // arg: file to count
+        myargs[2] = NULL; // mark end of array
+        execvp(myargs[0], myargs); // runs word count
+    } else {
+        int rc_wait = wait(NULL);
+    }
+    return 0; 
+}
