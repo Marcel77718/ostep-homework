@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <fcntl.h>
 
@@ -12,7 +13,8 @@ int main (int argc, char *argv[]) {
         exit(1);
     } else if (rc == 0) {
         close(STDOUT_FILENO);
-        open("./p4.output", O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU);
+        open("./p4.output", O_CREAT | O_WRONLY | O_TRUNC,
+             S_IRWXU);
         char *myargs[3];
         myargs[0] = strdup("wc"); // program: wc
         myargs[1] = strdup("p4.c"); // arg: file to count
@@ -21,5 +23,5 @@ int main (int argc, char *argv[]) {
     } else {
         int rc_wait = wait(NULL);
     }
-    return 0; 
+    return 0;
 }
