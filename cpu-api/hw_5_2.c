@@ -20,7 +20,7 @@ int main (int argc, char *argv[]) {
     } else if(rc == 0) {
         msg = "Das ist im Child der Inhalt.\n";
         if (fd < 0) {
-            perror("Error opening file");
+            fprintf(stderr, "Error opening file");
             exit(1);
         } else {
             write(fd, msg, strlen(msg));
@@ -28,7 +28,7 @@ int main (int argc, char *argv[]) {
     } else {
         msg = "Das ist im Parent der Inhalt.\n";
         if (fd < 0) {
-        perror("Error opening file");
+        fprintf(stderr, "Error opening file");
         exit(1);
         } else {
             int rc_wait = wait(NULL);

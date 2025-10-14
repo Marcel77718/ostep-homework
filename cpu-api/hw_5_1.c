@@ -4,7 +4,7 @@
 
 int x;
 
-int main (int argc, char *argv[]) {
+int main (void) {
     x = 100;
     printf("x vor fork: %d\n", x);
     int rc = fork();
@@ -16,8 +16,7 @@ int main (int argc, char *argv[]) {
         x = 5;
         printf("x in child: %d\n", x);
     } else {
-        printf("x in parent before changed: %d\n", x);
-        x = 20;
+        //wait(NULL);
         printf("x in parent: %d\n", x);
     }
     return 0;

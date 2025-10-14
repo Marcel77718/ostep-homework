@@ -20,8 +20,8 @@ int main (int argc, char *argv[]) {
     } else {
         int rc_wait = waitpid(rc, NULL, NULL);
         // 1. parameter kann sagen auf welches kind genau gewartet werden soll
-        // 2  parameter
-        // 3. parameter erlaubt optionen
+        // 2  parameter ?status?
+        // 3. parameter optionen
         printf("\nFertig.\n");
         printf("waitpid 1. argument: %d\n", rc);
         printf("waitppid() returns: %d\n", rc_wait);
