@@ -189,16 +189,15 @@ class OS:
 
     def dumpPage(self, whichPage):
         i = whichPage
-        for j in range(0, self.pageSize):
-            print(self.memory[(i * self.pageSize) + j], end='')
-        print('')
+        # print the page contents as two-digit hex bytes separated by spaces
+        line = ' '.join('%02x' % self.memory[(i * self.pageSize) + j] for j in range(self.pageSize))
+        print(line)
 
     def memoryDump(self):
         for i in range(0, int(self.physMem / self.pageSize)):
-            print('page %3d:' %  i, end='')
-            for j in range(0, self.pageSize):
-                print('%02x' % self.memory[(i * self.pageSize) + j], end='')
-            print('')
+            # prepare hex byte strings and join with spaces for readability
+            line_values = [('%02x' % self.memory[(i * self.pageSize) + j]) for j in range(self.pageSize)]
+            print('page %3d: %s' % (i, ' '.join(line_values)))
 
     def getPDBR(self, pid):
         return self.pdbr[pid]
