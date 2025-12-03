@@ -1,0 +1,35 @@
+Aufgabe 1)
+    Ja, Helgrind zeigt auf die korrekten Stellen im Code:
+    Es markiert die Zugriffe auf die globale Variable balance in main und worker als mögliche Data Races.
+
+    Es gibt zusätzlich an:
+
+    welche Threads beteiligt sind (Thread #1 und #2),
+
+    ob es ein Read- oder Write-Zugriff ist,
+
+    dass keine Locks gehalten werden (Locks held: none),
+
+    die Adresse und den zugehörigen Symbolnamen (balance),
+
+    sowie einen Stacktrace, der genau zu main und worker zurückführt.
+
+Aufgabe 2)
+    Wenn ich eine offending line remove zeigt mir helgrind keinen fehler an, klar es gibt ja auch keine racing condition mehr.
+
+Aufgabe 3)
+    weil zwei Threads dieselben zwei Mutexes (m1 und m2) in unterschiedlicher Reihenfolge
+    locken und sich gegenseitig blockieren können, wenn jeder einen Lock hält und auf den anderen wartet.
+
+Aufgabe 4)
+    Helgrind meldet eine Lock-Order-Violation:
+    Es erkennt, dass die beiden Mutexes m1 und m2 in einer Reihenfolge (m1 → m2) gelockt werden, 
+    und an anderer Stelle im Code in der umgekehrten Reihenfolge (m2 → m1).
+    Es zeigt die betroffenen Locks (m1 und m2), deren Adressen und die Zeilen im worker-Code, und warnt, 
+    dass diese inkonsistente Lockreihenfolge zu einem möglichen Deadlock führen kann.
+
+Aufgabe 5)
+    Das Programm hat durch den globalen Lock g nicht mehr denselben Deadlock wie main-deadlock.c.
+    Helgrind meldet trotzdem eine Lock-Order-Verletzung zwischen m1 und m2.
+    Das zeigt, dass solche Tools False Positives haben können und man ihre Meldungen immer im Kontext betrachten muss – sie sind hilfreich, aber nicht perfekt.
+
