@@ -8,27 +8,59 @@
 //
 
 typedef struct __rwlock_t {
+    sem_t roomEmpty;   // 1 => niemand schreibt und keine Lesergruppe hält es
+    sem_t turnstile;   // fairness gate: writer blocks new readers here
+    sem_t mutex;       // protects readers counter
+    int readers;
 } rwlock_t;
 
-
 void rwlock_init(rwlock_t *rw) {
+    rw->readers = 0;
+    sem_init(&rw->roomEmpty, 0, 1);
+    sem_init(&rw->turnstile, 0, 1);
+    sem_init(&rw->mutex, 0, 1);
 }
 
 void rwlock_acquire_readlock(rwlock_t *rw) {
+    // pass through the gate; if a writer is waiting, this blocks
+    sem_wait(&rw->turnstile);
+    sem_post(&rw->turnstile);
+
+    sem_wait(&rw->mutex);
+    rw->readers++;
+    if (rw->readers == 1) {
+        // first reader blocks writers
+        sem_wait(&rw->roomEmpty);
+    }
+    sem_post(&rw->mutex);
 }
 
 void rwlock_release_readlock(rwlock_t *rw) {
+    sem_wait(&rw->mutex);
+    rw->readers--;
+    if (rw->readers == 0) {
+        // last reader lets writers in
+        sem_post(&rw->roomEmpty);
+    }
+    sem_post(&rw->mutex);
 }
 
 void rwlock_acquire_writelock(rwlock_t *rw) {
+    // block new readers at the gate
+    sem_wait(&rw->turnstile);
+    // wait until there are no active readers/writers in the room
+    sem_wait(&rw->roomEmpty);
 }
 
 void rwlock_release_writelock(rwlock_t *rw) {
+    sem_post(&rw->roomEmpty);
+    // open gate for readers again
+    sem_post(&rw->turnstile);
 }
 
 //
 // Don't change the code below (just use it!)
-// 
+//
 
 int loops;
 int value = 0;
@@ -36,22 +68,22 @@ int value = 0;
 rwlock_t lock;
 
 void *reader(void *arg) {
-    int i;
-    for (i = 0; i < loops; i++) {
-	rwlock_acquire_readlock(&lock);
-	printf("read %d\n", value);
-	rwlock_release_readlock(&lock);
+    for (int i = 0; i < loops; i++) {
+        rwlock_acquire_readlock(&lock);
+        printf("read %d\n", value);
+        // sleep(1); // optional: make interleavings visible
+        rwlock_release_readlock(&lock);
     }
     return NULL;
 }
 
 void *writer(void *arg) {
-    int i;
-    for (i = 0; i < loops; i++) {
-	rwlock_acquire_writelock(&lock);
-	value++;
-	printf("write %d\n", value);
-	rwlock_release_writelock(&lock);
+    for (int i = 0; i < loops; i++) {
+        rwlock_acquire_writelock(&lock);
+        value++;
+        printf("write %d\n", value);
+        // sleep(1); // optional: make interleavings visible
+        rwlock_release_writelock(&lock);
     }
     return NULL;
 }
@@ -68,19 +100,16 @@ int main(int argc, char *argv[]) {
 
     printf("begin\n");
 
-    int i;
-    for (i = 0; i < num_readers; i++)
-	Pthread_create(&pr[i], NULL, reader, NULL);
-    for (i = 0; i < num_writers; i++)
-	Pthread_create(&pw[i], NULL, writer, NULL);
+    for (int i = 0; i < num_readers; i++)
+        Pthread_create(&pr[i], NULL, reader, NULL);
+    for (int i = 0; i < num_writers; i++)
+        Pthread_create(&pw[i], NULL, writer, NULL);
 
-    for (i = 0; i < num_readers; i++)
-	Pthread_join(pr[i], NULL);
-    for (i = 0; i < num_writers; i++)
-	Pthread_join(pw[i], NULL);
+    for (int i = 0; i < num_readers; i++)
+        Pthread_join(pr[i], NULL);
+    for (int i = 0; i < num_writers; i++)
+        Pthread_join(pw[i], NULL);
 
     printf("end: value %d\n", value);
-
     return 0;
 }
-

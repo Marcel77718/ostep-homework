@@ -2,35 +2,64 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <semaphore.h>
+#include <pthread.h>
 
 #include "common_threads.h"
 
-// If done correctly, each child should print their "before" message
-// before either prints their "after" message. Test by adding sleep(1)
-// calls in various locations.
-
-// You likely need two semaphores to do this correctly, and some
-// other integers to track things.
-
 typedef struct __barrier_t {
-    // add semaphores and other information here
+    int num_threads;
+    int counter;
+    pthread_mutex_t lock;
+
+    // two semaphores ("turnstiles")
+    sem_t s1;
+    sem_t s2;
 } barrier_t;
 
-
-// the single barrier we are using for this program
 barrier_t b;
 
 void barrier_init(barrier_t *b, int num_threads) {
-    // initialization code goes here
+    b->num_threads = num_threads;
+    b->counter = 0;
+
+    pthread_mutex_init(&b->lock, NULL);
+
+    // first gate closed, second gate open
+    sem_init(&b->s1, 0, 0);
+    sem_init(&b->s2, 0, 1);
 }
 
 void barrier(barrier_t *b) {
-    // barrier code goes here
+    // phase 1: arrive
+    pthread_mutex_lock(&b->lock);
+    b->counter++;
+    if (b->counter == b->num_threads) { //Wenn letzter Thread rein kommt macht er Tür 1 auf und Tür 2 zu
+        // last one closes s2 and opens s1
+        sem_wait(&b->s2);
+        sem_post(&b->s1);
+    }
+    pthread_mutex_unlock(&b->lock);
+
+    // pass through first gate (baton passing)
+    sem_wait(&b->s1);
+    sem_post(&b->s1);
+
+    // phase 2: depart
+    pthread_mutex_lock(&b->lock);
+    b->counter--;
+    if (b->counter == 0) {
+        // last one closes s1 and opens s2
+        sem_wait(&b->s1);
+        sem_post(&b->s2);
+    }
+    pthread_mutex_unlock(&b->lock);
+
+    // pass through second gate (baton passing)
+    sem_wait(&b->s2);
+    sem_post(&b->s2);
 }
 
-//
-// XXX: don't change below here (just run it!)
-//
 typedef struct __tinfo_t {
     int thread_id;
 } tinfo_t;
@@ -43,9 +72,6 @@ void *child(void *arg) {
     return NULL;
 }
 
-
-// run with a single argument indicating the number of 
-// threads you wish to create (1 or more)
 int main(int argc, char *argv[]) {
     assert(argc == 2);
     int num_threads = atoi(argv[1]);
@@ -56,17 +82,15 @@ int main(int argc, char *argv[]) {
 
     printf("parent: begin\n");
     barrier_init(&b, num_threads);
-    
-    int i;
-    for (i = 0; i < num_threads; i++) {
-	t[i].thread_id = i;
-	Pthread_create(&p[i], NULL, child, &t[i]);
+
+    for (int i = 0; i < num_threads; i++) {
+        t[i].thread_id = i;
+        Pthread_create(&p[i], NULL, child, &t[i]);
     }
 
-    for (i = 0; i < num_threads; i++) 
-	Pthread_join(p[i], NULL);
+    for (int i = 0; i < num_threads; i++)
+        Pthread_join(p[i], NULL);
 
     printf("parent: end\n");
     return 0;
 }
-
